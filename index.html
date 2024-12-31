@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025 Happy New Year</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: black;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="fireworks"></canvas>
+    <script>
+        const canvas = document.getElementById("fireworks");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let showText = false; // 控制文字显示
+        let textOpacity = 0; // 控制文字的透明度
+
+
+        // 为每个烟花生成不同的颜色
+        const colorPalette = [
+            "rgb(255, 87, 51)",   // 红色
+            "rgb(255, 189, 51)",  // 黄色
+            "rgb(51, 255, 87)",   // 绿色
+            "rgb(51, 88, 255)",   // 蓝色
+            "rgb(255, 51, 161)",  // 粉红色
+            "rgb(255, 255, 255)", // 白色
+            "rgb(255, 165, 0)"    // 橙色
+        ];
+
+        class Firework {
+            constructor(x, y, targetY) {
+                this.x = x;
+                this.y = y;
+                this.targetY = targetY;
+                this.exploded = false;
+                this.particles = [];
+                this.trail = [];
+                this.brightness = 0;
+                this.size = 2;
+
+                // 随机选取一个颜色
+                this.color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+                this.finalColor = this.getRandomColor(); // 爆炸后的最终颜色
+            }
+
+            getRandomColor() {
+                const colorPalette = [
+                    "rgb(255, 87, 51)",   // 红色
+                    "rgb(255, 189, 51)",  // 黄色
+                    "rgb(51, 255, 87)",   // 绿色
+                    "rgb(51, 88, 255)",   // 蓝色
+                    "rgb(255, 51, 161)",  // 粉红色
+                    "rgb(255, 255, 255)", // 白色
+                    "rgb(255, 165, 0)"    // 橙色
+                ];
+                return colorPalette[Math.floor(Math.random() * colorPalette.length)];
+            }
+
+            update() {
+                if (!this.exploded) {
+                    this.trail.push({ x: this.x, y: this.y, alpha: 1 });
+                    this.trail = this.trail.slice(-20);
+
+                    this.y -= 6;
+                    if (this.y <= this.targetY) {
+                        this.explode();
+                        this.exploded = true;
+                        this.brightness = 1;
+                    }
+                } else {
+                    this.particles.forEach(p => p.update());
+                    this.brightness *= 0.9;
+                }
+            }
+
+            draw() {
+                if (!this.exploded) {
+                    // 画光的轨迹
+                    ctx.save();
+                    this.trail.forEach(point => {
+                        ctx.beginPath();
+                        ctx.arc(point.x, point.y, this.size, 0, Math.PI * 2);
+                        ctx.fillStyle = `rgba(255, 223, 77, ${point.alpha})`;
+                        ctx.fill();
+                        point.alpha *= 0.9;
+                    });
+                    ctx.restore();
+
+                    // 画烟花的上升点
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color; // 烟花上升时为烟花的颜色
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = this.color;
+                    ctx.fill();
+                } else {
+                    this.particles.forEach(p => p.draw());
+                }
+
+                if (this.brightness > 0.1) {
+                    this.createBackgroundGlow();
+                }
+            }
+
+            explode() {
+                const particleCount = 250 + Math.random() * 50; // 增加粒子数量
+
+                for (let i = 0; i < particleCount; i++) {
+                    const angle = (Math.PI * 2) / particleCount * i;
+                    const speed = Math.random() * 6 + 6; // 增加爆炸的范围
+                    this.particles.push(new Particle(this.x, this.y, angle, speed, this.color, this.finalColor));
+                }
+            }
+
+            createBackgroundGlow() {
+                const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, 100);
+                gradient.addColorStop(0, `rgba(255, 255, 255, ${this.brightness * 0.5})`);
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.fillStyle = gradient;
+                ctx.fillRect(this.x - 100, this.y - 100, 200, 200);
+                ctx.restore();
+            }
+        }
+
+        class Particle {
+            constructor(x, y, angle, speed, color, finalColor) {
+                this.x = x;
+                this.y = y;
+                this.angle = angle;
+                this.speed = speed;
+                this.initialColor = color;
+                this.finalColor = finalColor;
+                this.color = color;
+                this.size = Math.random() * 2 + 2; // 粒子初始大小
+                this.gravity = 0.05;
+                this.friction = 0.97;
+                this.opacity = 1;
+                this.decay = Math.random() * 0.02 + 0.01;
+                this.vx = Math.cos(this.angle) * this.speed;
+                this.vy = Math.sin(this.angle) * this.speed;
+                this.timeAlive = 0; // 追踪粒子的生命时间
+            }
+
+            update() {
+                this.vx *= this.friction;
+                this.vy *= this.friction;
+                this.vy += this.gravity;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.opacity -= this.decay;
+                this.timeAlive++;
+
+                // 随着时间变化，颜色从初始颜色过渡到最终颜色
+                const r1 = parseInt(this.initialColor.match(/\d+/g)[0]);
+                const g1 = parseInt(this.initialColor.match(/\d+/g)[1]);
+                const b1 = parseInt(this.initialColor.match(/\d+/g)[2]);
+                const r2 = parseInt(this.finalColor.match(/\d+/g)[0]);
+                const g2 = parseInt(this.finalColor.match(/\d+/g)[1]);
+                const b2 = parseInt(this.finalColor.match(/\d+/g)[2]);
+
+                const r = r1 + ((r2 - r1) * this.timeAlive / 100);
+                const g = g1 + ((g2 - g1) * this.timeAlive / 100);
+                const b = b1 + ((b2 - b1) * this.timeAlive / 100);
+
+                this.color = `rgb(${Math.min(r, 255)}, ${Math.min(g, 255)}, ${Math.min(b, 255)})`;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(this.opacity, 0);
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        const fireworks = [];
+
+        function createFireworkRow() {
+            const rowCount = 30; // 设置烟花数量
+            const spacing = canvas.width / (rowCount + 1); // 设置烟花之间的间距
+            for (let i = 1; i <= rowCount; i++) {
+                const x = spacing * i;
+                const y = canvas.height;
+                const targetY = y - Math.random() * canvas.height * 0.8; // 设置烟花的目标高度
+                fireworks.push(new Firework(x, y, targetY));
+            }
+        }
+
+        function createFirework() {
+            const x = Math.random() * canvas.width;
+            const y = canvas.height;
+            const targetY = Math.random() * canvas.height * 0.5;
+            fireworks.push(new Firework(x, y, targetY));
+        }
+
+        function updateFireworks() {
+            for (let i = fireworks.length - 1; i >= 0; i--) {
+                fireworks[i].update();
+                if (fireworks[i].exploded && fireworks[i].particles.every(p => p.opacity <= 0)) {
+                    fireworks.splice(i, 1.2);
+                }
+            }
+        }
+
+        function drawFireworks() {
+            fireworks.forEach(f => f.draw());
+        }
+
+        function drawText() {
+        if (showText) {
+            ctx.save();
+            ctx.font = "bold 60px Arial";
+            ctx.textAlign = "center";
+            ctx.fillStyle = `rgba(255, 255, 255, ${textOpacity})`;
+            ctx.fillText("2025 新年快乐!", canvas.width / 2, canvas.height / 2);
+            ctx.restore();
+
+            // 如果文字透明度小于1，则逐渐增加透明度
+            if (textOpacity < 1) {
+                textOpacity += 0.01;
+            }
+        } else {
+            // 如果文字不需要显示，则确保文字透明度为0
+            textOpacity = 0;
+        }
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        updateFireworks();
+        drawFireworks();
+        drawText();
+
+        requestAnimationFrame(animate);
+    }
+         // 在开始时放一排烟花
+        createFireworkRow();
+
+        setInterval(createFirework, 500);  // 每秒钟发射一个烟花
+        setTimeout(() => showText = true, 2000);  // 2秒后显示文字
+
+        animate();
+    </script>
+</body>
+</html>
