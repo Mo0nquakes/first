@@ -195,7 +195,7 @@
         const fireworks = [];
 
         function createFireworkRow() {
-            const rowCount = 30; // 设置烟花数量
+            const rowCount = 5; // 设置烟花数量
             const spacing = canvas.width / (rowCount + 1); // 设置烟花之间的间距
             for (let i = 1; i <= rowCount; i++) {
                 const x = spacing * i;
@@ -225,25 +225,36 @@
             fireworks.forEach(f => f.draw());
         }
 
+        let fadingIn = true; // 控制文字是渐显还是渐隐
+
         function drawText() {
         if (showText) {
             ctx.save();
             ctx.font = "bold 60px Arial";
             ctx.textAlign = "center";
             ctx.fillStyle = `rgba(255, 255, 255, ${textOpacity})`;
-            ctx.fillText("2025 新年快乐!", canvas.width / 2, canvas.height / 2);
+            ctx.fillText("新年快乐!", canvas.width / 2, canvas.height / 2);
             ctx.restore();
 
-            // 如果文字透明度小于1，则逐渐增加透明度
-            if (textOpacity < 1) {
-                textOpacity += 0.01;
+        // 渐显和渐隐逻辑
+            if (fadingIn) {
+            textOpacity += 0.01; // 增加透明度
+                if (textOpacity >= 1) {
+                textOpacity = 1;
+                fadingIn = false; // 开始渐隐
             }
         } else {
-            // 如果文字不需要显示，则确保文字透明度为0
-            textOpacity = 0;
+            textOpacity -= 0.01; // 减少透明度
+                if (textOpacity <= 0) {
+                textOpacity = 0;
+                fadingIn = true; // 再次渐显
+            }
+        }
+        }   
+            else {
+                textOpacity = 0; // 确保文字透明度为 0
         }
     }
-
     function animate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -257,7 +268,7 @@
         createFireworkRow();
 
         setInterval(createFirework, 500);  // 每秒钟发射一个烟花
-        setTimeout(() => showText = true, 2000);  // 2秒后显示文字
+        setTimeout(() => showText = true, 1000);  // 2秒后显示文字
 
         animate();
     </script>
