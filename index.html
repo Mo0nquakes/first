@@ -225,7 +225,10 @@
             fireworks.forEach(f => f.draw());
         }
 
-        let fadingIn = true; // 控制文字是渐显还是渐隐
+        let fadingIn = true; // 是否处于渐显阶段
+        let currentText = "新年快乐!"; // 当前显示的文字
+        const texts = ["新年快乐!", "万事如意!", "心想事成!"]; // 要循环显示的文字列表
+        let currentIndex = 0; // 当前文字索引
 
         function drawText() {
         if (showText) {
@@ -233,29 +236,32 @@
             ctx.font = "bold 60px Arial";
             ctx.textAlign = "center";
             ctx.fillStyle = `rgba(255, 255, 255, ${textOpacity})`;
-            ctx.fillText("新年快乐!", canvas.width / 2, canvas.height / 2);
+            ctx.fillText(currentText, canvas.width / 2, canvas.height / 2);
             ctx.restore();
 
         // 渐显和渐隐逻辑
-            if (fadingIn) {
-            textOpacity += 0.01; // 增加透明度
-            if (textOpacity >= 1) {
-                textOpacity = 1;
-                fadingIn = false; // 开始渐隐
-            }
-        } else {
-            textOpacity -= 0.01; // 减少透明度
-                if (textOpacity <= 0) {
-                textOpacity = 0;
-                fadingIn = true; // 再次渐显
+        if (fadingIn) {
+                textOpacity += 0.01; // 渐显
+                if (textOpacity >= 1) {
+                textOpacity = 1; // 达到完全显示
+                setTimeout(() => {
+                    fadingIn = false; // 延时后开始渐隐
+                },600); // 保持全显状态 0.6 秒
+                }
+            } else {
+            textOpacity -= 0.01; // 渐隐
+            if (textOpacity <= 0) {
+                textOpacity = 0; // 完全隐去后切换文字
+                currentIndex = (currentIndex + 1) % texts.length;
+                currentText = texts[currentIndex];
+                fadingIn = true; // 开始下一轮渐显
             }
         }
-        }   
-            else {
-                textOpacity = 0; // 确保文字透明度为 0
-        }
+    } else {
+        textOpacity = 0; // 如果不显示文字，透明度归零
     }
-    function animate() {
+}
+        function animate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         updateFireworks();
